@@ -201,4 +201,4 @@ setInterval(async () => {
 
 
 
-client.login(process.env.MTUyNDA3MjY2MzUxMTk5NDU4OA.Gvq5kO.m9jdLSktv5uqDVfgvSNGGHgnrAVc1hkq8m7qjw);
+client.login(process.env.TOKEN);
