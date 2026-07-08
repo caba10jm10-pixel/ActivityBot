@@ -1,70 +1,71 @@
+const { EmbedBuilder } = require("discord.js");
+const config = require("../config.json");
 const {
     loadMessages,
     saveMessages,
+    loadSettings,
+    saveSettings,
+    loadWinners,
     saveWinners
 } = require("./save");
 
-
-function resetRanking(){
-
+async function resetRanking(client) {
 
     const data = loadMessages();
-
+    const settings = loadSettings();
 
     const ranking = Object.entries(data)
-        .sort((a,b) => b[1].messages - a[1].messages)
-        .slice(0,3);
+        .sort((a, b) => b[1].messages - a[1].messages);
 
+    const winnerEntry = ranking[0];
 
+    let winnerText = "Nadie participó hoy.";
+    let winnerId = null;
+    let winnerMessages = 0;
 
-    let winners = {};
+    if (winnerEntry) {
+        winnerId = winnerEntry[0];
+        winnerMessages = winnerEntry[1].messages;
+        winnerText = `<@${winnerId}>`;
 
+        // 🥇 Guardar el ganador del día
+        const winners = loadWinners();
+        const today = new Date().toISOString().split("T")[0];
 
-
-    if(ranking[0]){
-
-        winners.first = {
-            id: ranking[0][0],
-            username: ranking[0][1].username,
-            messages: ranking[0][1].messages,
-            coins: 100
+        winners[today] = {
+            userId: winnerId,
+            username: winnerEntry[1].username,
+            messages: winnerMessages
         };
 
+        saveWinners(winners);
     }
 
+    // 👤 Actualizar lastWinner
+    settings.lastWinner = winnerText;
+    saveSettings(settings);
 
-    if(ranking[1]){
+    // 📢 Enviar mensaje al canal anunciando el ganador
+    const channel = client.channels.cache.get(config.channelId);
 
-        winners.second = {
-            id: ranking[1][0],
-            username: ranking[1][1].username,
-            messages: ranking[1][1].messages,
-            coins: 70
-        };
+    if (channel) {
+        const embed = new EmbedBuilder()
+            .setTitle("🏆 Resultado del día")
+            .setDescription(
+                winnerId
+                    ? `¡Felicidades ${winnerText}!\nGanaste con **${winnerMessages} mensajes**.`
+                    : winnerText
+            )
+            .setColor(0xffd700)
+            .setTimestamp();
 
+        await channel.send({ embeds: [embed] });
     }
 
-
-    if(ranking[2]){
-
-        winners.third = {
-            id: ranking[2][0],
-            username: ranking[2][1].username,
-            messages: ranking[2][1].messages,
-            coins: 50
-        };
-
-    }
-
-
-
-    saveWinners(winners);
-
-
+    // 🗑️ Vaciar messages.json
     saveMessages({});
 
-
+    // ▶️ El nuevo día empieza solo, ya que messages.json quedó vacío
 }
-
 
 module.exports = resetRanking;
