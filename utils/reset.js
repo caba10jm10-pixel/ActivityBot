@@ -19,7 +19,7 @@ async function resetRanking(client) {
 
     const winnerEntry = ranking[0];
 
-    let winnerText = "Nadie participó hoy.";
+    let winnerText = "No one participated today.";
     let winnerId = null;
     let winnerMessages = 0;
 
@@ -49,18 +49,30 @@ async function resetRanking(client) {
     const channel = client.channels.cache.get(config.channelId);
 
     if (channel) {
-        const embed = new EmbedBuilder()
-            .setTitle("🏆 Resultado del día")
-            .setDescription(
-                winnerId
-                    ? `¡Felicidades ${winnerText}!\nGanaste con **${winnerMessages} mensajes**.`
-                    : winnerText
-            )
-            .setColor(0xffd700)
-            .setTimestamp();
+    const top3 = ranking.slice(0, 3);
 
-        await channel.send({ embeds: [embed] });
+    const rewards = [100, 70, 50];
+    const medals = ["🥇", "🥈", "🥉"];
+
+    let description = "No one participated today.";
+
+    if (top3.length > 0) {
+        description = top3
+            .map(([userId, userData], index) =>
+                `${medals[index]} <@${userId}>: 💰 **${rewards[index]} Coins** (${userData.messages} messages)`
+            )
+            .join("\n");
     }
+
+    const embed = new EmbedBuilder()
+        .setTitle("📅 End of the Day")
+        .setDescription(`🏆 **Today's Top Chatters**\n\n${description}`)
+        .setColor(0xFFD700)
+        .setFooter({ text: "Keep chatting to earn more coins!" })
+        .setTimestamp();
+
+    await channel.send({ embeds: [embed] });
+}
 
     // 🗑️ Vaciar messages.json
     saveMessages({});
